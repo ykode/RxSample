@@ -2,9 +2,6 @@ package com.ykode.rxsample;
 
 import android.graphics.Color;
 import android.support.annotation.Nullable;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,51 +18,25 @@ import java.util.regex.Pattern;
 
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.android.widget.OnTextChangeEvent;
-import rx.android.widget.WidgetObservable;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 
+import com.jakewharton.rxbinding.widget.RxTextView;
 
-public class MainActivity extends ActionBarActivity {
+import android.app.Activity;
+import android.app.Fragment;
+
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
+            getFragmentManager().beginTransaction()
                     .add(R.id.container, new PlaceholderFragment())
                     .commit();
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     /**
@@ -76,6 +47,8 @@ public class MainActivity extends ActionBarActivity {
         private EditText userNameEdit;
         private EditText emailEdit;
         private Button registerButton;
+
+        private CompositeSubscription compoSubs; 
 
         public PlaceholderFragment() {
         }
@@ -99,29 +72,35 @@ public class MainActivity extends ActionBarActivity {
                     "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
                             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$");
 
-            Observable<Boolean> userNameValid = WidgetObservable.text(userNameEdit)
-                    .map(e -> e.text())
+            compoSubs = new CompositeSubscription();
+            
+            Observable<Boolean> userNameValid = RxTextView.textChanges(userNameEdit)
                     .map(t -> t.length() > 4);
 
-            Observable<Boolean> emailValid = WidgetObservable.text(emailEdit)
-                    .map(e -> e.text())
+            Observable<Boolean> emailValid = RxTextView.textChanges(emailEdit)
                     .map(t -> emailPattern.matcher(t).matches());
 
-            emailValid.distinctUntilChanged()
+            compoSubs.add(emailValid.distinctUntilChanged()
                     .doOnNext( b -> Log.d("[Rx]", "Email " + (b ? "Valid" : "Invalid")))
                     .map(b -> b ? Color.BLACK : Color.RED)
-                    .subscribe(color -> emailEdit.setTextColor(color));
+                    .subscribe(color -> emailEdit.setTextColor(color)));
 
-            userNameValid.distinctUntilChanged()
+            compoSubs.add(userNameValid.distinctUntilChanged()
                     .doOnNext( b -> Log.d("[Rx]", "Uname " + (b ? "Valid" : "Invalid")))
                     .map(b -> b ? Color.BLACK : Color.RED)
-                    .subscribe(color -> userNameEdit.setTextColor(color));
+                    .subscribe(color -> userNameEdit.setTextColor(color)));
 
             Observable<Boolean> registerEnabled =
                     Observable.combineLatest(userNameValid, emailValid, (a,b) -> a && b);
-            registerEnabled.distinctUntilChanged()
+            compoSubs.add(registerEnabled.distinctUntilChanged()
                     .doOnNext( b -> Log.d("[Rx]", "Button " + (b ? "Enabled" : "Disabled")))
-                    .subscribe( enabled -> registerButton.setEnabled(enabled));
+                    .subscribe( enabled -> registerButton.setEnabled(enabled)));
+        }
+        
+        @Override
+        public void onDestroy() {
+          super.onDestroy();
+          compoSubs.unsubscribe();
         }
     }
 }
