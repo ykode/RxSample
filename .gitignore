@@ -6,3 +6,7 @@
 /.idea/libraries
 .DS_Store
 /build
+
+/buck-cache
+/buck-out
+/.buckd

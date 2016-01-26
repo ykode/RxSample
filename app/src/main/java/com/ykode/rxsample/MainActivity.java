@@ -5,8 +5,6 @@ import android.support.annotation.Nullable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.os.Build;
@@ -15,6 +13,7 @@ import android.widget.EditText;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.lang.CharSequence;
 
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
@@ -25,6 +24,10 @@ import com.jakewharton.rxbinding.widget.RxTextView;
 
 import android.app.Activity;
 import android.app.Fragment;
+
+import rx.functions.Func1;
+import rx.functions.Func2;
+import rx.functions.Action1;
 
 public class MainActivity extends Activity {
 
@@ -75,26 +78,80 @@ public class MainActivity extends Activity {
             compoSubs = new CompositeSubscription();
             
             Observable<Boolean> userNameValid = RxTextView.textChanges(userNameEdit)
-                    .map(t -> t.length() > 4);
+                    .map(new Func1<CharSequence, Boolean>() {
+                      @Override
+                      public Boolean call(final CharSequence t) {
+                        return t.length() > 4;
+                      }
+                    });
 
             Observable<Boolean> emailValid = RxTextView.textChanges(emailEdit)
-                    .map(t -> emailPattern.matcher(t).matches());
+                    .map(new Func1<CharSequence, Boolean>() {
+                      @Override
+                      public Boolean call(final CharSequence t) {
+                        return emailPattern.matcher(t).matches();
+                      }
+                    }); 
+
+            final Action1<Boolean> logF = new Action1<Boolean>() {
+              @Override
+              public void call(final Boolean b) {
+                Log.d("[Rx]", "Email " + (b ? "Valid" : "Invalid"));
+              }
+            };
+
+            final Func1<Boolean, Integer> colorF = new Func1<Boolean, Integer>() {
+              @Override
+              public final Integer call(final Boolean b) {
+                return (b.booleanValue() ? Color.BLACK : Color.RED);
+              }
+            }; 
 
             compoSubs.add(emailValid.distinctUntilChanged()
-                    .doOnNext( b -> Log.d("[Rx]", "Email " + (b ? "Valid" : "Invalid")))
-                    .map(b -> b ? Color.BLACK : Color.RED)
-                    .subscribe(color -> emailEdit.setTextColor(color)));
+                    .doOnNext(logF)
+                    .map(colorF)
+                    .subscribe(new Action1<Integer>() {
+                      @Override
+                      public void call(final Integer c) {
+                        emailEdit.setTextColor(c);
+                      }
+                    })
+                  );
 
             compoSubs.add(userNameValid.distinctUntilChanged()
-                    .doOnNext( b -> Log.d("[Rx]", "Uname " + (b ? "Valid" : "Invalid")))
-                    .map(b -> b ? Color.BLACK : Color.RED)
-                    .subscribe(color -> userNameEdit.setTextColor(color)));
+                    .doOnNext(logF)
+                    .map(colorF)
+                    .subscribe(new Action1<Integer>() {
+                      @Override
+                      public void call(final Integer c) {
+                        userNameEdit.setTextColor(c);
+                      }
+                    })
+                  );
 
             Observable<Boolean> registerEnabled =
-                    Observable.combineLatest(userNameValid, emailValid, (a,b) -> a && b);
+              Observable.combineLatest(userNameValid, emailValid,
+                new Func2<Boolean, Boolean, Boolean>() {
+                  @Override
+                  public final Boolean call(final Boolean a, Boolean b) {
+                    return a && b;
+                  }
+                });
+
             compoSubs.add(registerEnabled.distinctUntilChanged()
-                    .doOnNext( b -> Log.d("[Rx]", "Button " + (b ? "Enabled" : "Disabled")))
-                    .subscribe( enabled -> registerButton.setEnabled(enabled)));
+                    .doOnNext(new Action1<Boolean>() {
+                      @Override
+                      public void call(final Boolean b) {
+                        Log.d("[Rx]", "Button " + (b.booleanValue() ? "Enabled" : "Disabled"));
+                      }
+                    })
+                    .subscribe( new Action1<Boolean>() {
+                      @Override
+                      public void call(final Boolean enabled) {
+                        registerButton.setEnabled(enabled.booleanValue());
+                      }
+                    })
+            );
         }
         
         @Override

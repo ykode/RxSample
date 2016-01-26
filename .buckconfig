@@ -1,0 +1,19 @@
+[android]
+build_tools_version = 23.0.2
+target = Google Inc.:Google APIs:21
+
+[java]
+source_level = 7
+target_level = 7
+
+[maven_repositories]
+central = https://repo1.maven.org/maven2t 
+jcenter = https://jcenter.bintray.com/
+jitpack = https://jitpack.io
+fabric  = https://maven.fabric.io/public
+tbruyelle = https://dl.bintray.com/tbruyelle/tbruyelle
+sonatype_snapshot = https://oss.sonatype.org/content/repositories/snapshots
+
+[project]
+ignore = .git
+temp_files = ^#.*#$, .*~$, .*\.swp$

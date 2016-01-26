@@ -1,0 +1,25 @@
+android_resource(
+ name = "res",
+ res  = "src/main/res",
+ package = "com.ykode.rxsample"
+)
+
+android_library(
+ name = "app-lib",
+ srcs = glob(["src/main/java/**/*.java"]),
+ deps = [
+     ':res',
+     '//deps:rxbinding',
+     '//deps:rxjava',
+     '//deps:rxandroid',
+     '//deps:support-annotations',
+ ]
+)
+
+android_binary(
+ name = "apk-debug",
+ manifest = "src/main/AndroidManifest.xml",
+ keystore = "//deps:debug-keystore",
+ package_type = "debug",
+ deps = [":res", ":app-lib"]
+)

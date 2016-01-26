@@ -1,0 +1,22 @@
+include_defs("//deps/BuckDefs")
+
+deps = [
+  {"spec" : "io.reactivex:rxandroid:1.0.1", "aar" : True,
+   "sha1" : "563323d4f90cdb87d067fcf02b06c5d16bb1a258"},
+  {"spec" : "io.reactivex:rxjava:1.0.14",
+   "sha1" : "898f9ab61e2a23afd615f0b0389478bec86f49f9"},
+  {"spec" : "com.jakewharton.rxbinding:rxbinding:0.2.0", "aar" : True,
+   "sha1" : "97c550ecaf825c003b1b30cb1b754745fa79307a"},
+  {"spec" : "com.android.support:support-annotations:23.1.1",
+   "sha1" : "8d680ba5a623724d1fb0e81c36a790f023a6cede"},
+]
+
+for dep in deps:
+    maven_deps(**dep)
+
+keystore(
+ name = "debug-keystore",
+ store = "debug.keystore",
+ properties = "debug.properties",
+ visibility = ["//app/..."]
+)

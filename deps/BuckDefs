@@ -1,0 +1,35 @@
+def remote_jar_deps(name = "", url  = "", sha1 = "", aar = False):
+  suffix = "__jar"
+  if aar == True:
+    suffix = "__aar"
+
+  jarname = name + suffix
+  
+  remote_file( name = jarname, url = url, sha1 = sha1)
+
+  if aar == False:
+    prebuilt_jar( name = name, binary_jar = ":" + jarname, visibility = ["PUBLIC"])
+  else:
+    android_prebuilt_aar(name = name, aar = ":" + jarname, visibility = ["PUBLIC"])
+  
+
+def remote_maven_deps(namespace = "", module = "", version = "", sha1 = "", aar = False):
+  type_string ="jar"
+
+  if aar == True:
+    type_string ="aar"
+
+  remote_jar_deps(
+    name = module,
+    url  = "mvn:%s:%s:%s:%s" % (namespace, module, type_string, version),
+    sha1 = sha1,
+    aar = aar
+  )
+
+def maven_deps(spec, sha1, name="", aar= False):
+  part = spec.split(':')
+  namespace = part[0]
+  module = part[1]
+  version = part[2]
+  
+  remote_maven_deps(namespace, module, version, sha1, aar)
